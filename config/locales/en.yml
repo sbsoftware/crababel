@@ -1,0 +1,9 @@
+en:
+  greeting: "Hello"
+  errors:
+    not_found: "Not found"
+    invalid_user: "Invalid user"
+de:
+  greeting: "Hallo"
+  errors:
+    not_found: "Nicht gefunden"

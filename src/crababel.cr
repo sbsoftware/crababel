@@ -1,6 +1,5 @@
-# TODO: Write documentation for `Crababel`
-module Crababel
-  VERSION = "0.1.0"
-
-  # TODO: Put your code here
+macro t(locale_name)
+  Crababel.locale({{locale_name}}).{{ @type.name.split("::").map(&.underscore).join(".").id }}
 end
+
+{{ run "./generate_locales.cr" }}
