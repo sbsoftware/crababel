@@ -1,9 +1,13 @@
 en:
   greeting: "Hello"
+  custom:
+    leaf: "Custom hello"
   errors:
     not_found: "Not found"
     invalid_user: "Invalid user"
 de:
   greeting: "Hallo"
+  custom:
+    leaf: "Custom hallo"
   errors:
     not_found: "Nicht gefunden"

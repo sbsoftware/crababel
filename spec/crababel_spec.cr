@@ -30,3 +30,19 @@ describe "t macro" do
     Errors::NotFound.message.should eq("Not found")
   end
 end
+
+class GreetingTranslator
+  macro t(locale_name)
+    Crababel.locale({{locale_name}}).custom
+  end
+
+  def self.message
+    t("en").leaf
+  end
+end
+
+describe "t macro override" do
+  it "can target a custom namespace" do
+    GreetingTranslator.message.should eq("Custom hello")
+  end
+end
