@@ -7,6 +7,8 @@ end
 
 crababel = CGT::Module.new("Crababel")
 
+INTERPOLATION_REGEX = /(?<!\\)((?:\\\\\\\\)*)(?<escape>\\(\\)|)\\(#\{(?<var>[[:alpha:]_][[:alnum:]_]*)\})/
+
 def generate_modules(parent, namespace, children)
   namespace_module = CGT::Module.new(namespace.camelcase)
   parent.add_object(namespace_module)
@@ -19,7 +21,19 @@ def generate_modules(parent, namespace, children)
       generate_modules(namespace_module, child_namespace.as_s, grandchildren_hash)
     else
       method = CGT::Method.new("self.#{child_namespace.as_s}", String.to_s)
-      method.add_body(grandchildren.as_s.dump)
+      value = grandchildren.as_s.dump
+      interpolation_scan = value.scan(INTERPOLATION_REGEX)
+
+      if !interpolation_scan.empty?
+        interpolation_scan.select(&.["escape"].empty?).map(&.["var"]).uniq.each do |var|
+          method.add_arg(var, "String")
+        end
+
+        subbed_value = value.gsub(INTERPOLATION_REGEX, "\\1\\3\\4")
+        method.add_body(subbed_value)
+      else
+        method.add_body(value)
+      end
       namespace_module.add_object(method)
     end
   end

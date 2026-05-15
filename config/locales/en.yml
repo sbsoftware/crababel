@@ -2,6 +2,12 @@ en:
   greeting: "Hello"
   custom:
     leaf: "Custom hello"
+  interpolate:
+    single: "Hello #{greet_name}"
+    reuse: "#{to_be} or not #{to_be}"
+    multiple: "From #{a} to #{b}"
+    multiple_reuse: "From #{a} to #{b} back to #{a}"
+    escape: "#{a} \\#{unused} \\\\#{b} \\\\\\#{unused_again}"
   errors:
     not_found: "Not found"
     invalid_user: "Invalid user"
@@ -9,5 +15,11 @@ de:
   greeting: "Hallo"
   custom:
     leaf: "Custom hallo"
+  interpolate:
+    single: "Hallo #{greet_name}"
+    reuse: "#{to_be} oder nicht #{to_be}"
+    multiple: "Von #{a} bis #{b}"
+    multiple_reuse: "Von #{a} bis #{b} zurück nach #{a}"
+    escape: "#{a} \\#{unused} \\\\#{b} \\\\\\#{unused_again}"
   errors:
     not_found: "Nicht gefunden"
