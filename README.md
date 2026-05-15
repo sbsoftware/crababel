@@ -20,13 +20,28 @@ TODO: Write a description here
 require "crababel"
 ```
 
-Translations are generated from `config/locales/en.yml` at compile time and are exposed as methods on the locale module.
+Translations are generated from `config/locales/**/*.yml` at compile time and are exposed as methods on the locale module. A single file such as `config/locales/en.yml` still works, and larger projects can split translations by domain:
+
+```yaml
+# config/locales/en.yml
+en:
+  greeting: "Hello"
+```
+
+```yaml
+# config/locales/errors.yml
+en:
+  errors:
+    not_found: "Not found"
+```
 
 ```crystal
 Crababel.locales # => ["en", "de"]
 Crababel.locale("en").greeting # => "Hello"
 Crababel.locale("de").errors.not_found # => "Nicht gefunden"
 ```
+
+Locale files are loaded in sorted path order so generated code is deterministic. Files are deep-merged by namespace, but each full translation key may be defined only once. Crababel raises at compile time when two files define the same translation key, or when one file defines a key as a value and another defines the same key as a namespace.
 
 ### Placeholder interpolation
 

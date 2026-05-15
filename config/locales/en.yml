@@ -1,15 +1,6 @@
 en:
   greeting: "Hello"
   welcome_user: "Hello %{name}"
-  custom:
-    leaf: "Custom hello"
-  errors:
-    not_found: "Not found"
-    invalid_user: "Invalid user"
 de:
   greeting: "Hallo"
   welcome_user: "Hallo %{name}"
-  custom:
-    leaf: "Custom hallo"
-  errors:
-    not_found: "Nicht gefunden"

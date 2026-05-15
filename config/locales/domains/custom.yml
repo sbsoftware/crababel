@@ -1,0 +1,6 @@
+en:
+  custom:
+    leaf: "Custom hello"
+de:
+  custom:
+    leaf: "Custom hallo"
