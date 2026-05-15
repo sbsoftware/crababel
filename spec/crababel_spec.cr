@@ -10,6 +10,12 @@ describe Crababel do
     Crababel.locale("de").errors.not_found.should eq("Nicht gefunden")
   end
 
+  it "returns placeholder-like text without interpolation" do
+    Crababel.locale("en").welcome_user.should eq("Hello %{name}")
+    Crababel.locale("en").welcome_user.should_not eq("Hello Alice")
+    Crababel.locale("de").welcome_user.should eq("Hallo %{name}")
+  end
+
   it "raises for unsupported locales" do
     expect_raises(Exception, "Unsupported locale: es") do
       Crababel.locale("es")

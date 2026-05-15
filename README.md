@@ -20,11 +20,46 @@ TODO: Write a description here
 require "crababel"
 ```
 
-TODO: Write usage instructions here
+Translations are generated from `config/locales/en.yml` at compile time and are exposed as methods on the locale module.
+
+```crystal
+Crababel.locales # => ["en", "de"]
+Crababel.locale("en").greeting # => "Hello"
+Crababel.locale("de").errors.not_found # => "Nicht gefunden"
+```
+
+### Placeholder interpolation
+
+Crababel currently returns translation values exactly as they are written in the locale file. Placeholder-looking text such as `%{name}` is supported only as literal text; Crababel does not replace placeholders or accept interpolation arguments.
+
+Supported:
+
+```yaml
+en:
+  welcome_user: "Hello %{name}"
+```
+
+```crystal
+Crababel.locale("en").welcome_user # => "Hello %{name}"
+```
+
+Not supported:
+
+```crystal
+Crababel.locale("en").welcome_user(name: "Alice")
+# No generated overload accepts interpolation arguments.
+```
+
+If an application needs interpolation today, keep that formatting outside Crababel.
 
 ## Development
 
-TODO: Write development instructions here
+Install dependencies and run the specs:
+
+```sh
+shards install
+crystal spec
+```
 
 ## Contributing
 
