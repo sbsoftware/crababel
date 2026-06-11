@@ -1,0 +1,7 @@
+en:
+  errors:
+    not_found: "Not found"
+    invalid_user: "Invalid user"
+de:
+  errors:
+    not_found: "Nicht gefunden"
