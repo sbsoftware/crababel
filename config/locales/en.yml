@@ -1,6 +1,5 @@
 en:
   greeting: "Hello"
-  welcome_user: "Hello %{name}"
   interpolate:
     single: "Hello #{greet_name}"
     reuse: "#{to_be} or not #{to_be}"
@@ -9,7 +8,6 @@ en:
     escape: "#{a} \\#{unused} \\\\#{b} \\\\\\#{unused_again}"
 de:
   greeting: "Hallo"
-  welcome_user: "Hallo %{name}"
   interpolate:
     single: "Hallo #{greet_name}"
     reuse: "#{to_be} oder nicht #{to_be}"

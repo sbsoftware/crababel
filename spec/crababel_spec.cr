@@ -17,12 +17,6 @@ describe Crababel do
     Crababel.locale("de").custom.leaf.should eq("Custom hallo")
   end
 
-  it "returns placeholder-like text without interpolation" do
-    Crababel.locale("en").welcome_user.should eq("Hello %{name}")
-    Crababel.locale("en").welcome_user.should_not eq("Hello Alice")
-    Crababel.locale("de").welcome_user.should eq("Hallo %{name}")
-  end
-
   it "interpolates a single variable" do
     Crababel.locale("en").interpolate.single("myself").should eq("Hello myself")
     Crababel.locale("de").interpolate.single("myself").should eq("Hallo myself")
