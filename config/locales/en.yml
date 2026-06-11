@@ -1,6 +1,18 @@
 en:
   greeting: "Hello"
   welcome_user: "Hello %{name}"
+  interpolate:
+    single: "Hello #{greet_name}"
+    reuse: "#{to_be} or not #{to_be}"
+    multiple: "From #{a} to #{b}"
+    multiple_reuse: "From #{a} to #{b} back to #{a}"
+    escape: "#{a} \\#{unused} \\\\#{b} \\\\\\#{unused_again}"
 de:
   greeting: "Hallo"
   welcome_user: "Hallo %{name}"
+  interpolate:
+    single: "Hallo #{greet_name}"
+    reuse: "#{to_be} oder nicht #{to_be}"
+    multiple: "Von #{a} bis #{b}"
+    multiple_reuse: "Von #{a} bis #{b} zurück nach #{a}"
+    escape: "#{a} \\#{unused} \\\\#{b} \\\\\\#{unused_again}"

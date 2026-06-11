@@ -63,6 +63,8 @@ translations = load_translations
 
 crababel = CGT::Module.new("Crababel")
 
+INTERPOLATION_REGEX = /(?<!\\)((?:\\\\\\\\)*)(?<escape>\\(\\)|)\\(#\{(?<var>[[:alpha:]_][[:alnum:]_]*)\})/
+
 def generate_modules(parent, namespace, children)
   namespace_module = CGT::Module.new(namespace.camelcase)
   parent.add_object(namespace_module)
@@ -76,7 +78,18 @@ def generate_modules(parent, namespace, children)
       generate_modules(namespace_module, child_namespace, grandchildren_hash)
     else
       method = CGT::Method.new("self.#{child_namespace}", String.to_s)
-      method.add_body(grandchildren.as(String).dump)
+      value = grandchildren.as(String).dump
+      interpolation_scan = value.scan(INTERPOLATION_REGEX)
+
+      if !interpolation_scan.empty?
+        interpolation_scan.select(&.["escape"].empty?).map(&.["var"]).uniq.each do |var|
+          method.add_arg(var, "String")
+        end
+
+        method.add_body(value.gsub(INTERPOLATION_REGEX, "\\1\\3\\4"))
+      else
+        method.add_body(value)
+      end
       namespace_module.add_object(method)
     end
   end
