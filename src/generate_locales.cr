@@ -77,8 +77,8 @@ def generate_modules(parent, namespace, children)
     if grandchildren_hash = grandchildren.as?(Hash(String, Translation))
       generate_modules(namespace_module, child_namespace, grandchildren_hash)
     else
-      method = CGT::Method.new("self.#{child_namespace}", String.to_s)
-      value = grandchildren.as(String).dump
+      method = CGT::Method.new("self.#{child_namespace.as_s}", String.to_s)
+      value = grandchildren.as_s.dump
       interpolation_scan = value.scan(INTERPOLATION_REGEX)
 
       if !interpolation_scan.empty?
@@ -86,7 +86,8 @@ def generate_modules(parent, namespace, children)
           method.add_arg(var, "String")
         end
 
-        method.add_body(value.gsub(INTERPOLATION_REGEX, "\\1\\3\\4"))
+        subbed_value = value.gsub(INTERPOLATION_REGEX, "\\1\\3\\4")
+        method.add_body(subbed_value)
       else
         method.add_body(value)
       end
