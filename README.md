@@ -45,27 +45,31 @@ Locale files are loaded in sorted path order so generated code is deterministic.
 
 ### Placeholder interpolation
 
-Crababel currently returns translation values exactly as they are written in the locale file. Placeholder-looking text such as `%{name}` is supported only as literal text; Crababel does not replace placeholders or accept interpolation arguments.
+Crababel generates method arguments for placeholders written as Crystal interpolation expressions. Each unique `#{name}` placeholder becomes a required `String` argument, and repeated placeholders reuse the same argument.
 
-Supported:
+For example:
 
 ```yaml
 en:
-  welcome_user: "Hello %{name}"
+  welcome_user: "Hello #{name}"
+  route: "From #{origin} to #{destination}"
 ```
 
 ```crystal
-Crababel.locale("en").welcome_user # => "Hello %{name}"
+Crababel.locale("en").welcome_user(name: "Alice") # => "Hello Alice"
+Crababel.locale("en").route(origin: "Berlin", destination: "Paris") # => "From Berlin to Paris"
 ```
 
-Not supported:
+Escape interpolation syntax with a backslash when it should remain literal text:
+
+```yaml
+en:
+  literal: "Hello \\#{name}"
+```
 
 ```crystal
-Crababel.locale("en").welcome_user(name: "Alice")
-# No generated overload accepts interpolation arguments.
+Crababel.locale("en").literal # => "Hello #{name}"
 ```
-
-If an application needs interpolation today, keep that formatting outside Crababel.
 
 ## Development
 
