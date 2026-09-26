@@ -80,6 +80,46 @@ describe Crababel do
   ensure
     FileUtils.rm_rf(root) if root
   end
+
+  it "loads shard defaults with project overrides" do
+    root = File.join(Dir.tempdir, "crababel-overrides-#{Time.utc.to_unix_ns}")
+    shard_locales = File.join(root, "lib", "example", "config", "locales")
+    project_locales = File.join(root, "config", "locales")
+    Dir.mkdir_p(shard_locales)
+    Dir.mkdir_p(project_locales)
+    File.write(File.join(shard_locales, "en.yml"), "en:\n  greeting: \"Hello\"\n  nested:\n    default: \"Default\"\n    shared: \"Shard\"\n")
+    File.write(File.join(project_locales, "en.yml"), "en:\n  nested:\n    shared: \"Project\"\n    custom: \"Custom\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(root, "lib", "**", "config", "locales", "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(project_locales, "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_true
+    generated = output.to_s
+    generated.should contain(%(def self.greeting : String\n      "Hello"))
+    generated.should contain(%(def self.default : String\n        "Default"))
+    generated.should contain(%(def self.shared : String\n        "Project"))
+    generated.should contain(%(def self.custom : String\n        "Custom"))
+  ensure
+    FileUtils.rm_rf(root) if root
+  end
+
+  it "retains duplicate checking within shard locales" do
+    root = File.join(Dir.tempdir, "crababel-shard-conflict-#{Time.utc.to_unix_ns}")
+    shard_locales = File.join(root, "lib", "example", "config", "locales")
+    Dir.mkdir_p(shard_locales)
+    File.write(File.join(shard_locales, "base.yml"), "en:\n  greeting: \"Hello\"\n")
+    File.write(File.join(shard_locales, "duplicate.yml"), "en:\n  greeting: \"Hi\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(shard_locales, "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(root, "config", "locales", "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_false
+    error.to_s.should contain("Duplicate translation key en.greeting")
+  ensure
+    FileUtils.rm_rf(root) if root
+  end
 end
 
 module Errors

@@ -3,7 +3,8 @@ require "crygen"
 
 alias Translation = Hash(String, Translation) | String
 
-LOCALES_PATTERN = ENV["CRABABEL_LOCALES_PATTERN"]? || "config/locales/**/*.yml"
+SHARD_LOCALES_PATTERN   = ENV["CRABABEL_SHARD_LOCALES_PATTERN"]? || "lib/**/config/locales/**/*.yml"
+PROJECT_LOCALES_PATTERN = ENV["CRABABEL_LOCALES_PATTERN"]? || "config/locales/**/*.yml"
 
 def parse_translation(value, file, path) : Translation
   if children = value.as_h?
@@ -44,12 +45,9 @@ def merge_translations(target, source, file, path)
   end
 end
 
-def load_translations
+def load_translations(pattern)
   translations = {} of String => Translation
-  files = Dir.glob(LOCALES_PATTERN).sort
-  raise "No locale files found for #{LOCALES_PATTERN}" if files.empty?
-
-  files.each do |file|
+  Dir.glob(pattern).sort.each do |file|
     yaml = File.open(file) do |io|
       YAML.parse(io)
     end
@@ -59,7 +57,23 @@ def load_translations
   translations
 end
 
-translations = load_translations
+def merge_overrides(target, overrides)
+  overrides.each do |key, value|
+    # Defaults and overrides are checked separately, so matching keys across
+    # groups are intentional. Preserve unmatched nested shard translations.
+    if current_children = target[key]?.try(&.as?(Hash(String, Translation)))
+      if override_children = value.as?(Hash(String, Translation))
+        merge_overrides(current_children, override_children)
+        next
+      end
+    end
+    target[key] = value
+  end
+end
+
+translations = load_translations(SHARD_LOCALES_PATTERN)
+merge_overrides(translations, load_translations(PROJECT_LOCALES_PATTERN))
+raise "No locale files found for #{SHARD_LOCALES_PATTERN} or #{PROJECT_LOCALES_PATTERN}" if translations.empty?
 
 crababel = CGT::Module.new("Crababel")
 

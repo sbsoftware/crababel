@@ -20,7 +20,7 @@ TODO: Write a description here
 require "crababel"
 ```
 
-Translations are generated from `config/locales/**/*.yml` at compile time and are exposed as methods on the locale module. A single file such as `config/locales/en.yml` still works, and larger projects can split translations by domain:
+Translations are generated at compile time from shard defaults in `lib/**/config/locales/**/*.yml` and project translations in `config/locales/**/*.yml`, then exposed as methods on the locale module. Project translations override shard defaults. A single project file such as `config/locales/en.yml` still works, and larger projects can split translations by domain:
 
 ```yaml
 # config/locales/en.yml
@@ -41,7 +41,7 @@ Crababel.locale("en").greeting # => "Hello"
 Crababel.locale("de").errors.not_found # => "Nicht gefunden"
 ```
 
-Locale files are loaded in sorted path order so generated code is deterministic. Files are deep-merged by namespace, but each full translation key may be defined only once. Crababel raises at compile time when two files define the same translation key, or when one file defines a key as a value and another defines the same key as a namespace.
+Locale files are loaded in sorted path order so generated code is deterministic. Files are deep-merged by namespace, but each full translation key may be defined only once within the shard-default group or project group. Crababel raises at compile time for conflicts within either group while allowing project keys to replace shard defaults.
 
 ### Placeholder interpolation
 
