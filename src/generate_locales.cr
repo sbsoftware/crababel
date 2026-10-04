@@ -45,9 +45,9 @@ def merge_translations(target, source, file, path)
   end
 end
 
-def load_translations(pattern)
+def load_translations(files)
   translations = {} of String => Translation
-  Dir.glob(pattern).sort.each do |file|
+  files.each do |file|
     yaml = File.open(file) do |io|
       YAML.parse(io)
     end
@@ -55,6 +55,12 @@ def load_translations(pattern)
   end
 
   translations
+end
+
+def shard_name(file)
+  # Group files by their shard so duplicate checking remains local to a shard,
+  # while collisions between independently maintained shards stay silent.
+  file.partition("/config/locales/")[0]
 end
 
 def merge_overrides(target, overrides)
@@ -71,9 +77,25 @@ def merge_overrides(target, overrides)
   end
 end
 
-translations = load_translations(SHARD_LOCALES_PATTERN)
-merge_overrides(translations, load_translations(PROJECT_LOCALES_PATTERN))
-raise "No locale files found for #{SHARD_LOCALES_PATTERN} or #{PROJECT_LOCALES_PATTERN}" if translations.empty?
+shard_files = Dir.glob(SHARD_LOCALES_PATTERN).sort
+project_files = Dir.glob(PROJECT_LOCALES_PATTERN).sort
+raise "No locale files found for #{SHARD_LOCALES_PATTERN} or #{PROJECT_LOCALES_PATTERN}" if shard_files.empty? && project_files.empty?
+
+translations = {} of String => Translation
+shard_locale_sets = shard_files.group_by { |file| shard_name(file) }.keys.sort.map do |name|
+  shard_translations = load_translations(shard_files.select { |file| shard_name(file) == name })
+  merge_overrides(translations, shard_translations)
+  shard_translations.keys.sort
+end
+project_translations = load_translations(project_files)
+merge_overrides(translations, project_translations)
+
+supported_locales = if project_translations.empty?
+                      shard_locale_sets.reduce { |intersection, locales| intersection & locales }.sort
+                    else
+                      project_translations.keys.sort
+                    end
+raise "Dependency locale roots have no common locale; declare supported locale roots explicitly in config/locales" if supported_locales.empty?
 
 crababel = CGT::Module.new("Crababel")
 
@@ -114,14 +136,14 @@ translations.keys.sort.each do |namespace|
 end
 
 locales_method = CGT::Method.new("self.locales", "Array(String)")
-locales_method.add_body(translations.keys.sort.to_s)
+locales_method.add_body(supported_locales.to_s)
 crababel.add_object(locales_method)
 
-locale_method = CGT::Method.new("self.locale", translations.keys.sort.map(&.camelcase).map { |m| "#{m}.class" }.join(" | "))
+locale_method = CGT::Method.new("self.locale", supported_locales.map(&.camelcase).map { |m| "#{m}.class" }.join(" | "))
 locale_method.add_arg("locale", "String")
 locale_case = String.build do |str|
   str << "case locale\n"
-  translations.keys.sort.each do |locale|
+  supported_locales.each do |locale|
     str << "when "
     str << locale.dump
     str << "\n  "
@@ -129,7 +151,7 @@ locale_case = String.build do |str|
     str << "\n"
   end
   str << "else\n"
-  str << "  raise \"Unsupported locale: \#{locale}\"\n"
+  str << "  raise \"Unsupported locale: \#{locale}. Supported locales: #{supported_locales.join(", ")}\"\n"
   str << "end"
 end
 locale_method.add_body(locale_case)
