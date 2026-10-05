@@ -20,7 +20,7 @@ TODO: Write a description here
 require "crababel"
 ```
 
-Translations are generated at compile time from shard defaults in `lib/**/config/locales/**/*.yml` and project translations in `config/locales/**/*.yml`, then exposed as methods on the locale module. Project translations override shard defaults. A single project file such as `config/locales/en.yml` still works, and larger projects can split translations by domain:
+Translations are generated at compile time from shard defaults in `lib/**/config/locales/**/*.yml` and project translations in `config/locales/**/*.yml`, then exposed as methods on the locale module. Shard locale files are scanned first in sorted path order, then project locale files are merged last in sorted path order and override shard defaults on identical keys. A single project file such as `config/locales/en.yml` still works, and larger projects can split translations by domain:
 
 ```yaml
 # config/locales/en.yml
@@ -41,7 +41,9 @@ Crababel.locale("en").greeting # => "Hello"
 Crababel.locale("de").errors.not_found # => "Nicht gefunden"
 ```
 
-Locale files are loaded in sorted path order so generated code is deterministic. Files are deep-merged by namespace, but each full translation key may be defined only once within the shard-default group or project group. Crababel raises at compile time for conflicts within either group while allowing project keys to replace shard defaults.
+Locale files are loaded in sorted path order so generated code is deterministic. Files are deep-merged by namespace, but each full translation key may be defined only once within an individual shard or the project group. Crababel raises at compile time for those conflicts while allowing project keys to replace shard defaults. If sibling shards define the same key, the later sorted shard silently takes precedence.
+
+The locale roots in the project's own files define the supported locales returned by `Crababel.locales` and accepted by `Crababel.locale`. Locale modules supplied only by dependencies are still generated, but are not advertised. When the project has no locale roots, Crababel supports only the locale roots shared by every dependency; if dependencies have no locale in common, generation fails with guidance to declare the project's supported roots explicitly.
 
 ### Placeholder interpolation
 

@@ -43,9 +43,76 @@ describe Crababel do
   end
 
   it "raises for unsupported locales" do
-    expect_raises(Exception, "Unsupported locale: es") do
+    expect_raises(Exception, "Unsupported locale: es. Supported locales: de, en") do
       Crababel.locale("es")
     end
+  end
+
+  it "advertises project locale roots while generating the dependency union" do
+    root = File.join(Dir.tempdir, "crababel-project-locales-#{Time.utc.to_unix_ns}")
+    shard_locales = File.join(root, "lib", "example", "config", "locales")
+    project_locales = File.join(root, "config", "locales")
+    Dir.mkdir_p(shard_locales)
+    Dir.mkdir_p(project_locales)
+    File.write(File.join(shard_locales, "locales.yml"), "en:\n  value: \"English\"\nde:\n  value: \"German\"\nes:\n  value: \"Spanish\"\n")
+    File.write(File.join(project_locales, "locales.yml"), "en:\n  project: \"English\"\nde:\n  project: \"German\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(root, "lib", "**", "config", "locales", "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(project_locales, "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_true
+    generated = output.to_s
+    generated.should contain("module Es")
+    generated.should contain(%(["de", "en"]))
+    generated.should_not contain(%(when "es"))
+    generated.should contain("Supported locales: de, en")
+  ensure
+    FileUtils.rm_rf(root) if root
+  end
+
+  it "advertises the intersection of dependency locale roots without project locales" do
+    root = File.join(Dir.tempdir, "crababel-intersection-#{Time.utc.to_unix_ns}")
+    shard_a = File.join(root, "lib", "a", "config", "locales")
+    shard_b = File.join(root, "lib", "b", "config", "locales")
+    Dir.mkdir_p(shard_a)
+    Dir.mkdir_p(shard_b)
+    File.write(File.join(shard_a, "locales.yml"), "en:\n  a: \"English\"\nde:\n  a: \"German\"\n")
+    File.write(File.join(shard_b, "locales.yml"), "en:\n  b: \"English\"\nfr:\n  b: \"French\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(root, "lib", "**", "config", "locales", "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(root, "config", "locales", "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_true
+    generated = output.to_s
+    generated.should contain(%(["en"]))
+    generated.should contain("module De")
+    generated.should contain("module Fr")
+    generated.should_not contain(%(when "de"))
+    generated.should_not contain(%(when "fr"))
+  ensure
+    FileUtils.rm_rf(root) if root
+  end
+
+  it "fails clearly when dependency locale roots are disjoint" do
+    root = File.join(Dir.tempdir, "crababel-disjoint-#{Time.utc.to_unix_ns}")
+    shard_a = File.join(root, "lib", "a", "config", "locales")
+    shard_b = File.join(root, "lib", "b", "config", "locales")
+    Dir.mkdir_p(shard_a)
+    Dir.mkdir_p(shard_b)
+    File.write(File.join(shard_a, "en.yml"), "en:\n  value: \"English\"\n")
+    File.write(File.join(shard_b, "de.yml"), "de:\n  value: \"German\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(root, "lib", "**", "config", "locales", "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(root, "config", "locales", "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_false
+    error.to_s.should contain("Dependency locale roots have no common locale")
+    error.to_s.should contain("declare supported locale roots explicitly in config/locales")
+  ensure
+    FileUtils.rm_rf(root) if root
   end
 
   it "still generates locale modules from a single locale file" do
@@ -117,6 +184,25 @@ describe Crababel do
 
     status.success?.should be_false
     error.to_s.should contain("Duplicate translation key en.greeting")
+  ensure
+    FileUtils.rm_rf(root) if root
+  end
+
+  it "silently resolves sibling shard collisions in deterministic order" do
+    root = File.join(Dir.tempdir, "crababel-sibling-collision-#{Time.utc.to_unix_ns}")
+    shard_a = File.join(root, "lib", "a", "config", "locales")
+    shard_b = File.join(root, "lib", "b", "config", "locales")
+    Dir.mkdir_p(shard_a)
+    Dir.mkdir_p(shard_b)
+    File.write(File.join(shard_a, "en.yml"), "en:\n  greeting: \"First\"\n")
+    File.write(File.join(shard_b, "en.yml"), "en:\n  greeting: \"Second\"\n")
+
+    output = IO::Memory.new
+    error = IO::Memory.new
+    status = Process.run("crystal", ["run", "src/generate_locales.cr"], env: {"CRYSTAL_CACHE_DIR" => File.join(root, "cache"), "CRABABEL_SHARD_LOCALES_PATTERN" => File.join(root, "lib", "**", "config", "locales", "**", "*.yml"), "CRABABEL_LOCALES_PATTERN" => File.join(root, "config", "locales", "**", "*.yml")}, output: output, error: error)
+
+    status.success?.should be_true
+    output.to_s.should contain(%(def self.greeting : String\n      "Second"))
   ensure
     FileUtils.rm_rf(root) if root
   end
