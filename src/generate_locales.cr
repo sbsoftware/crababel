@@ -82,8 +82,8 @@ project_files = Dir.glob(PROJECT_LOCALES_PATTERN).sort
 raise "No locale files found for #{SHARD_LOCALES_PATTERN} or #{PROJECT_LOCALES_PATTERN}" if shard_files.empty? && project_files.empty?
 
 translations = {} of String => Translation
-shard_locale_sets = shard_files.group_by { |file| shard_name(file) }.keys.sort.map do |name|
-  shard_translations = load_translations(shard_files.select { |file| shard_name(file) == name })
+shard_locale_sets = shard_files.group_by { |file| shard_name(file) }.to_a.sort_by(&.[0]).map do |_, files|
+  shard_translations = load_translations(files)
   merge_overrides(translations, shard_translations)
   shard_translations.keys.sort
 end
